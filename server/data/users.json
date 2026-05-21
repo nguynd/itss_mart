@@ -1,0 +1,50 @@
+[
+  {
+    "id": "user-huong",
+    "name": "Nguyễn Thị Hương",
+    "role": "Chủ hộ (Owner)",
+    "avatar": "https://api.dicebear.com/7.x/adventurer/svg?seed=huong",
+    "email": "huong.mom@gmail.com",
+    "familyId": "family-22"
+  },
+  {
+    "id": "user-thang",
+    "name": "Trần Đức Thắng",
+    "role": "Thành viên (Kho & Tủ lạnh)",
+    "avatar": "https://api.dicebear.com/7.x/adventurer/svg?seed=thang",
+    "email": "thang.thanhvien@gmail.com",
+    "familyId": "family-22"
+  },
+  {
+    "id": "user-duy",
+    "name": "Lê Hoàng Duy",
+    "role": "Thành viên (Mua sắm)",
+    "avatar": "https://api.dicebear.com/7.x/adventurer/svg?seed=duy",
+    "email": "duy.shopping@gmail.com",
+    "familyId": "family-22"
+  },
+  {
+    "id": "user-nam",
+    "name": "Phạm Hải Nam",
+    "role": "Thành viên (Công thức)",
+    "avatar": "https://api.dicebear.com/7.x/adventurer/svg?seed=nam",
+    "email": "nam.chef@gmail.com",
+    "familyId": "family-22"
+  },
+  {
+    "id": "user-duong",
+    "name": "Nguyễn Tấn Dương",
+    "role": "Thành viên (Kế hoạch & Báo cáo)",
+    "avatar": "https://api.dicebear.com/7.x/adventurer/svg?seed=duong",
+    "email": "duong.analytics@gmail.com",
+    "familyId": "family-22"
+  },
+  {
+    "id": "user-admin",
+    "name": "Hệ thống Admin",
+    "role": "Quản trị viên (Admin)",
+    "avatar": "https://api.dicebear.com/7.x/adventurer/svg?seed=admin",
+    "email": "admin.itss@convenient.com",
+    "familyId": ""
+  }
+]

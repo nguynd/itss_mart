@@ -1,0 +1,23 @@
+[
+  {
+    "id": "plan-1",
+    "dayOfWeek": "Mon",
+    "mealType": "lunch",
+    "recipeId": "recipe-canh-ca-chua-trung",
+    "recipeName": "Canh Cà Chua Trứng"
+  },
+  {
+    "id": "plan-2",
+    "dayOfWeek": "Mon",
+    "mealType": "dinner",
+    "recipeId": "recipe-thit-kho-tau",
+    "recipeName": "Thịt Kho Tàu"
+  },
+  {
+    "id": "plan-3",
+    "dayOfWeek": "Tue",
+    "mealType": "dinner",
+    "recipeId": "recipe-rau-muong-xao-toi",
+    "recipeName": "Rau Muống Xào Tỏi"
+  }
+]

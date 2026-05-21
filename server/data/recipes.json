@@ -1,0 +1,117 @@
+[
+  {
+    "id": "recipe-thit-kho-tau",
+    "name": "Thịt Kho Tàu",
+    "prepTime": 45,
+    "difficulty": "Trung bình",
+    "instructions": [
+      "Thịt ba chỉ rửa sạch, thái miếng vuông vừa ăn.",
+      "Ướp thịt với tỏi băm, nước mắm, đường, hạt nêm trong 30 phút.",
+      "Luộc trứng cút (hoặc trứng vịt) chín rồi lột vỏ.",
+      "Cho thịt vào nồi xào săn, sau đó đổ nước dừa tươi vào ngập mặt thịt.",
+      "Kho lửa nhỏ đến khi thịt mềm, cho trứng vào kho chung đến khi nước cạn bớt và có màu vàng nâu đẹp mắt."
+    ],
+    "ingredients": [
+      { "name": "Thịt ba chỉ", "quantity": 500, "unit": "g", "category": "Thịt cá" },
+      { "name": "Trứng", "quantity": 10, "unit": "quả", "category": "Đồ khô" },
+      { "name": "Nước dừa", "quantity": 1, "unit": "trái", "category": "Khác" },
+      { "name": "Tỏi", "quantity": 1, "unit": "củ", "category": "Gia vị" }
+    ],
+    "image": "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&auto=format&fit=crop&q=60"
+  },
+  {
+    "id": "recipe-canh-ca-chua-trung",
+    "name": "Canh Cà Chua Trứng",
+    "prepTime": 15,
+    "difficulty": "Dễ",
+    "instructions": [
+      "Cà chua rửa sạch, cắt múi cau. Hành lá cắt nhỏ.",
+      "Đập trứng ra bát, đánh tan.",
+      "Phi thơm hành khô, cho cà chua vào xào mềm tạo màu.",
+      "Đổ nước lọc vào đun sôi, nêm gia vị vừa ăn.",
+      "Rót từ từ trứng vào nồi, khuấy nhẹ tay theo một chiều để tạo vân mây.",
+      "Nước sôi lại thì tắt bếp, rắc hành lá lên trên."
+    ],
+    "ingredients": [
+      { "name": "Trứng", "quantity": 2, "unit": "quả", "category": "Đồ khô" },
+      { "name": "Cà chua", "quantity": 2, "unit": "quả", "category": "Rau củ" },
+      { "name": "Hành lá", "quantity": 2, "unit": "nhánh", "category": "Rau củ" }
+    ],
+    "image": "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&auto=format&fit=crop&q=60"
+  },
+  {
+    "id": "recipe-rau-muong-xao-toi",
+    "name": "Rau Muống Xào Tỏi",
+    "prepTime": 10,
+    "difficulty": "Dễ",
+    "instructions": [
+      "Rau muống nhặt sạch, bỏ bớt lá úa, rửa sạch để ráo.",
+      "Tỏi bóc vỏ, đập dập.",
+      "Đun nước sôi, chần sơ rau muống với chút muối rồi vớt ra ngâm nước đá cho giòn.",
+      "Làm nóng chảo, cho dầu ăn và tỏi vào phi thơm.",
+      "Cho rau muống vào xào nhanh tay trên lửa lớn, nêm hạt nêm, bột ngọt vừa ăn, tắt bếp."
+    ],
+    "ingredients": [
+      { "name": "Rau muống", "quantity": 500, "unit": "g", "category": "Rau củ" },
+      { "name": "Tỏi", "quantity": 1, "unit": "củ", "category": "Gia vị" }
+    ],
+    "image": "https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=400&auto=format&fit=crop&q=60"
+  },
+  {
+    "id": "recipe-dau-hu-sot-ca-chua",
+    "name": "Đậu Hũ Sốt Cà Chua",
+    "prepTime": 20,
+    "difficulty": "Dễ",
+    "instructions": [
+      "Đậu hũ thái miếng vừa ăn, đem chiên vàng giòn các mặt.",
+      "Cà chua cắt nhỏ băm nhuyễn.",
+      "Phi hành tỏi băm thơm, cho cà chua vào xào nhuyễn với chút nước, nêm hạt nêm, đường, nước mắm.",
+      "Cho đậu hũ đã chiên vào nồi sốt cà chua, đun nhỏ lửa 10 phút cho ngấm gia vị.",
+      "Rắc hành lá lên trên rồi tắt bếp."
+    ],
+    "ingredients": [
+      { "name": "Đậu hũ", "quantity": 3, "unit": "miếng", "category": "Đồ khô" },
+      { "name": "Cà chua", "quantity": 3, "unit": "quả", "category": "Rau củ" },
+      { "name": "Hành lá", "quantity": 2, "unit": "nhánh", "category": "Rau củ" }
+    ],
+    "image": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=60"
+  },
+  {
+    "id": "recipe-canh-suon-bi-dao",
+    "name": "Canh Sườn Non Bí Đao",
+    "prepTime": 40,
+    "difficulty": "Trung bình",
+    "instructions": [
+      "Sườn non chặt miếng vừa ăn, chần qua nước sôi để khử mùi hôi.",
+      "Bí đao gọt vỏ, bỏ ruột, rửa sạch cắt miếng vừa ăn.",
+      "Cho sườn non vào nồi ninh khoảng 20-30 phút cho sườn mềm.",
+      "Thả bí đao vào đun sôi thêm 5-7 phút cho chín mềm.",
+      "Nêm gia vị vừa ăn, rắc hành lá cắt nhỏ vào rồi tắt bếp."
+    ],
+    "ingredients": [
+      { "name": "Sườn non", "quantity": 400, "unit": "g", "category": "Thịt cá" },
+      { "name": "Bí đao", "quantity": 1, "unit": "quả", "category": "Rau củ" },
+      { "name": "Hành lá", "quantity": 2, "unit": "nhánh", "category": "Rau củ" }
+    ],
+    "image": "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&auto=format&fit=crop&q=60"
+  },
+  {
+    "id": "recipe-ga-rang-sa-ot",
+    "name": "Thịt Gà Rang Sả Ớt",
+    "prepTime": 30,
+    "difficulty": "Trung bình",
+    "instructions": [
+      "Gà rửa sạch, chặt miếng nhỏ vừa ăn.",
+      "Sả, ớt băm nhỏ.",
+      "Ướp thịt gà với 1/2 lượng sả, ớt, nước mắm, đường, dầu hào trong 20 phút.",
+      "Phi thơm lượng sả ớt còn lại, cho thịt gà vào xào săn trên lửa lớn.",
+      "Hạ nhỏ lửa, đậy vung kho gà chín mềm và nước cạn keo lại là được."
+    ],
+    "ingredients": [
+      { "name": "Thịt gà", "quantity": 600, "unit": "g", "category": "Thịt cá" },
+      { "name": "Sả", "quantity": 3, "unit": "nhánh", "category": "Rau củ" },
+      { "name": "Ớt", "quantity": 2, "unit": "quả", "category": "Rau củ" }
+    ],
+    "image": "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400&auto=format&fit=crop&q=60"
+  }
+]

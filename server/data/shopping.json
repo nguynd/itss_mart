@@ -1,0 +1,35 @@
+[
+  {
+    "id": "shop-item-1",
+    "name": "Bí đao",
+    "category": "Rau củ",
+    "quantity": 1,
+    "unit": "quả",
+    "completed": false,
+    "assignedTo": "user-duy",
+    "createdBy": "user-huong",
+    "dateCreated": "2026-05-20T10:00:00.000Z"
+  },
+  {
+    "id": "shop-item-2",
+    "name": "Sườn non",
+    "category": "Thịt cá",
+    "quantity": 400,
+    "unit": "g",
+    "completed": false,
+    "assignedTo": "user-thang",
+    "createdBy": "user-huong",
+    "dateCreated": "2026-05-20T10:05:00.000Z"
+  },
+  {
+    "id": "shop-item-3",
+    "name": "Đậu hũ",
+    "category": "Đồ khô",
+    "quantity": 3,
+    "unit": "miếng",
+    "completed": true,
+    "assignedTo": "user-duy",
+    "createdBy": "user-huong",
+    "dateCreated": "2026-05-20T10:10:00.000Z"
+  }
+]
