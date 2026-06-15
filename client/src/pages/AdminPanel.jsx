@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import { Settings, ShieldAlert, Plus, BookOpen, Trash2, Cpu, Database } from 'lucide-react';
+import { Settings, ShieldAlert, Plus, BookOpen, Trash2, Cpu, Database, Edit2 } from 'lucide-react';
+import { detectCategory } from '../utils/categoryDetector';
 
 export default function AdminPanel({ refreshTrigger, triggerRefresh }) {
   const [recipes, setRecipes] = useState([]);
   const [showAddRecipeModal, setShowAddRecipeModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [newRecipe, setNewRecipe] = useState({
     name: '',
     prepTime: '',
     difficulty: 'Dễ',
-    ingredients: [{ name: '', quantity: '', unit: 'g', category: 'Rau củ' }],
+    ingredients: [{ name: '', quantity: '', unit: 'gram', category: 'Rau củ' }],
     instructions: [''],
     image: ''
   });
 
   const categories = ['Rau củ', 'Thịt cá', 'Đồ khô', 'Gia vị', 'Khác'];
-  const units = ['g', 'kg', 'quả', 'miếng', 'hộp', 'chai', 'bó'];
+  const units = ['gram', 'muỗng', 'gói', 'quả', 'miếng', 'hộp', 'chai', 'bó'];
 
   useEffect(() => {
     fetchAdminData();
@@ -33,13 +35,21 @@ export default function AdminPanel({ refreshTrigger, triggerRefresh }) {
   const handleAddIngredientRow = () => {
     setNewRecipe(prev => ({
       ...prev,
-      ingredients: [...prev.ingredients, { name: '', quantity: '', unit: 'g', category: 'Rau củ' }]
+      ingredients: [...prev.ingredients, { name: '', quantity: '', unit: 'gram', category: 'Rau củ' }]
     }));
   };
 
   const handleIngredientChange = (idx, field, value) => {
     const updatedIngs = [...newRecipe.ingredients];
     updatedIngs[idx][field] = value;
+    
+    if (field === 'name') {
+      const detectedCategory = detectCategory(value);
+      if (detectedCategory) {
+        updatedIngs[idx].category = detectedCategory;
+      }
+    }
+    
     setNewRecipe(prev => ({ ...prev, ingredients: updatedIngs }));
   };
 
@@ -65,24 +75,59 @@ export default function AdminPanel({ refreshTrigger, triggerRefresh }) {
     const steps = newRecipe.instructions.filter(step => step.trim() !== '');
 
     try {
-      await api.addRecipe({
-        ...newRecipe,
-        prepTime: parseInt(newRecipe.prepTime) || 30,
-        ingredients: ings.map(i => ({ ...i, quantity: parseFloat(i.quantity) })),
-        instructions: steps
-      });
+      if (editingId) {
+        await api.updateRecipe(editingId, {
+          ...newRecipe,
+          prepTime: parseInt(newRecipe.prepTime) || 30,
+          ingredients: ings.map(i => ({ ...i, quantity: parseFloat(i.quantity) })),
+          instructions: steps
+        });
+      } else {
+        await api.addRecipe({
+          ...newRecipe,
+          prepTime: parseInt(newRecipe.prepTime) || 30,
+          ingredients: ings.map(i => ({ ...i, quantity: parseFloat(i.quantity) })),
+          instructions: steps
+        });
+      }
+      
       setShowAddRecipeModal(false);
+      setEditingId(null);
       setNewRecipe({
         name: '',
         prepTime: '',
         difficulty: 'Dễ',
-        ingredients: [{ name: '', quantity: '', unit: 'g', category: 'Rau củ' }],
+        ingredients: [{ name: '', quantity: '', unit: 'gram', category: 'Rau củ' }],
         instructions: [''],
         image: ''
       });
       triggerRefresh();
     } catch (err) {
       console.error("Error creating recipe:", err);
+    }
+  };
+
+  const handleEditRecipeClick = (recipe) => {
+    setEditingId(recipe.id);
+    setNewRecipe({
+      name: recipe.name,
+      prepTime: recipe.prepTime,
+      difficulty: recipe.difficulty,
+      ingredients: recipe.ingredients.length > 0 ? recipe.ingredients : [{ name: '', quantity: '', unit: 'gram', category: 'Rau củ' }],
+      instructions: recipe.instructions.length > 0 ? recipe.instructions : [''],
+      image: recipe.image || ''
+    });
+    setShowAddRecipeModal(true);
+  };
+
+  const handleDeleteRecipe = async (id) => {
+    if (confirm('Bạn có chắc chắn muốn xóa công thức này?')) {
+      try {
+        await api.deleteRecipe(id);
+        triggerRefresh();
+      } catch (err) {
+        console.error("Error deleting recipe:", err);
+      }
     }
   };
 
@@ -103,7 +148,18 @@ export default function AdminPanel({ refreshTrigger, triggerRefresh }) {
               <BookOpen size={18} style={{ color: 'var(--primary)' }} />
               Quản lý công thức hệ thống ({recipes.length})
             </h3>
-            <button className="btn btn-primary" onClick={() => setShowAddRecipeModal(true)}>
+            <button className="btn btn-primary" onClick={() => {
+              setEditingId(null);
+              setNewRecipe({
+                name: '',
+                prepTime: '',
+                difficulty: 'Dễ',
+                ingredients: [{ name: '', quantity: '', unit: 'gram', category: 'Rau củ' }],
+                instructions: [''],
+                image: ''
+              });
+              setShowAddRecipeModal(true);
+            }}>
               <Plus size={16} /> Thêm công thức mẫu
             </button>
           </div>
@@ -121,8 +177,16 @@ export default function AdminPanel({ refreshTrigger, triggerRefresh }) {
                     Chuẩn bị: {recipe.prepTime} phút | Nguyên liệu: {recipe.ingredients.length} món
                   </div>
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  Độ khó: {recipe.difficulty}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Độ khó: {recipe.difficulty}
+                  </div>
+                  <button className="btn btn-secondary" style={{ padding: '4px', border: 'none', background: 'transparent' }} onClick={() => handleEditRecipeClick(recipe)} title="Chỉnh sửa">
+                    <Edit2 size={16} style={{ color: 'var(--text-muted)' }} />
+                  </button>
+                  <button className="btn btn-secondary" style={{ padding: '4px', border: 'none', background: 'transparent' }} onClick={() => handleDeleteRecipe(recipe.id)} title="Xóa">
+                    <Trash2 size={16} style={{ color: 'var(--danger)' }} />
+                  </button>
                 </div>
               </div>
             ))}
@@ -173,7 +237,7 @@ export default function AdminPanel({ refreshTrigger, triggerRefresh }) {
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '580px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="modal-header">
-              <h3 className="modal-title">Thêm công thức nấu ăn mới</h3>
+              <h3 className="modal-title">{editingId ? 'Chỉnh sửa công thức' : 'Thêm công thức nấu ăn mới'}</h3>
               <button className="modal-close" onClick={() => setShowAddRecipeModal(false)}>✕</button>
             </div>
 
@@ -218,14 +282,28 @@ export default function AdminPanel({ refreshTrigger, triggerRefresh }) {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Link ảnh minh họa</label>
+                <label className="form-label">Ảnh minh họa (Tải lên từ máy tính)</label>
                 <input 
-                  type="text" 
+                  type="file" 
+                  accept="image/*"
                   className="form-input" 
-                  placeholder="https://images.unsplash.com/..." 
-                  value={newRecipe.image}
-                  onChange={(e) => setNewRecipe(prev => ({ ...prev, image: e.target.value }))}
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      try {
+                        const data = await api.uploadImage(file);
+                        setNewRecipe(prev => ({ ...prev, image: `http://localhost:5000${data.imageUrl}` }));
+                      } catch (err) {
+                        alert("Lỗi tải ảnh: " + err.message);
+                      }
+                    }
+                  }}
                 />
+                {newRecipe.image && (
+                  <div style={{ marginTop: '10px' }}>
+                    <img src={newRecipe.image} alt="Preview" style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px', border: '2px solid var(--border)' }} />
+                  </div>
+                )}
               </div>
 
               {/* INGREDIENTS DYNAMIC INPUT */}

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { api } from './api';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import FamilySetup from './pages/FamilySetup';
 import Dashboard from './pages/Dashboard';
 import Fridge from './pages/Fridge';
 import ShoppingList from './pages/ShoppingList';
@@ -18,29 +21,77 @@ import {
   PieChart, 
   Users, 
   Settings, 
-  UserCircle 
+  UserCircle,
+  LogOut
 } from 'lucide-react';
 
 export default function App() {
+  const [authState, setAuthState]     = useState('loading'); // 'loading' | 'login' | 'register' | 'family-setup' | 'app'
   const [currentUser, setCurrentUser] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [currentTab, setCurrentTab] = useState('dashboard');
+  const [users, setUsers]             = useState([]);
+  const [currentTab, setCurrentTab]   = useState('dashboard');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // Kiểm tra token khi khởi động
   useEffect(() => {
-    loadUsers();
+    const token = localStorage.getItem('itss_token');
+    if (!token) {
+      setAuthState('login');
+      return;
+    }
+    api.auth.me()
+      .then(user => {
+        setCurrentUser(user);
+        if (!user.familyId) {
+          setAuthState('family-setup');
+        } else {
+          loadUsers(user);
+          setAuthState('app');
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem('itss_token');
+        localStorage.removeItem('itss_user');
+        setAuthState('login');
+      });
   }, []);
 
-  const loadUsers = async () => {
+  const loadUsers = async (loggedUser) => {
     try {
       const data = await api.getUsers();
       setUsers(data);
-      // Default to Hương (Mom/Owner)
-      const defaultUser = data.find(u => u.id === 'user-huong') || data[0];
+      // Ưu tiên user đang đăng nhập, fallback về Hương
+      const me = loggedUser && data.find(u => u.id === loggedUser.id);
+      const defaultUser = me || data.find(u => u.id === 'user-huong') || data[0];
       setCurrentUser(defaultUser);
     } catch (err) {
-      console.error("Error loading initial users:", err);
+      console.error('Error loading users:', err);
     }
+  };
+
+  const handleLoginSuccess = (user) => {
+    setCurrentUser(user);
+    if (!user.familyId) {
+      setAuthState('family-setup');
+    } else {
+      loadUsers(user);
+      setAuthState('app');
+    }
+  };
+
+  const handleFamilySetupComplete = (user) => {
+    setCurrentUser(user);
+    loadUsers(user);
+    setAuthState('app');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('itss_token');
+    localStorage.removeItem('itss_user');
+    setCurrentUser(null);
+    setUsers([]);
+    setCurrentTab('dashboard');
+    setAuthState('login');
   };
 
   const triggerRefresh = () => {
@@ -59,6 +110,40 @@ export default function App() {
       }
     }
   };
+
+  // ── AUTH SCREENS ─────────────────────────────────────────────
+  if (authState === 'loading') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: '15px' }}>
+        <div style={{ width: '40px', height: '40px', border: '4px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'pulse-border 1s infinite' }}></div>
+        <p>Đang tải...</p>
+      </div>
+    );
+  }
+
+  if (authState === 'login') {
+    return (
+      <Login
+        onLoginSuccess={handleLoginSuccess}
+        onGoRegister={() => setAuthState('register')}
+      />
+    );
+  }
+
+  if (authState === 'register') {
+    return (
+      <Register
+        onRegisterSuccess={handleLoginSuccess}
+        onGoLogin={() => setAuthState('login')}
+      />
+    );
+  }
+
+  if (authState === 'family-setup') {
+    return (
+      <FamilySetup onSetupComplete={handleFamilySetupComplete} />
+    );
+  }
 
   if (!currentUser) {
     return (
@@ -188,13 +273,13 @@ export default function App() {
         </nav>
 
         <div className="nav-footer">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, overflow: 'hidden' }}>
             <img 
               src={currentUser.avatar} 
               alt={currentUser.name} 
-              style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} 
+              style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', flexShrink: 0 }} 
             />
-            <div style={{ overflow: 'hidden' }}>
+            <div style={{ overflow: 'hidden', flex: 1 }}>
               <div style={{ fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {currentUser.name}
               </div>
@@ -203,28 +288,26 @@ export default function App() {
               </div>
             </div>
           </div>
+          <button
+            id="logout-btn"
+            onClick={handleLogout}
+            title="Đăng xuất"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text-muted)', padding: '6px', borderRadius: '8px',
+              display: 'flex', alignItems: 'center', transition: 'color 0.2s, background 0.2s',
+              flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'none'; }}
+          >
+            <LogOut size={18} />
+          </button>
         </div>
       </aside>
 
       {/* MAIN LAYOUT */}
       <main className="main-content">
-        {/* TOP PANEL FOR ROLE SWITCHER */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
-          <div className="role-switcher-container">
-            <span className="role-label">Phân vai trải nghiệm:</span>
-            <select 
-              className="role-select" 
-              value={currentUser.id} 
-              onChange={handleUserChange}
-            >
-              {users.map(u => (
-                <option key={u.id} value={u.id}>
-                  {u.name} ({u.role.includes('Chủ hộ') ? 'Chủ hộ' : u.role.includes('Admin') ? 'Admin' : 'Thành viên'})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
 
         {/* PAGE CONTENT */}
         {renderContent()}

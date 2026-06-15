@@ -4,6 +4,8 @@ import {
   Thermometer, ShoppingCart, ChefHat, CalendarRange,
   ShieldAlert, Sparkles, ArrowRight, Clock, Package
 } from 'lucide-react';
+import { formatQuantity } from '../utils/format';
+
 
 export default function Dashboard({ currentUser, onTabChange, refreshTrigger }) {
   const [fridge, setFridge]       = useState([]);
@@ -220,7 +222,7 @@ export default function Dashboard({ currentUser, onTabChange, refreshTrigger }) 
                     <div>
                       <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.name}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {item.quantity} {item.unit} · {item.storageLocation}
+                        {formatQuantity(item.quantity, item.unit)} · {item.storageLocation}
                       </div>
                     </div>
                     <span className="badge badge-warning">

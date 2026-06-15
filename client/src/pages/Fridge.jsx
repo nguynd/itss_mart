@@ -1,24 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import { Plus, Search, Calendar, MapPin, Trash2, Check, Thermometer, ShieldAlert, Sparkles } from 'lucide-react';
+import { Plus, Search, Calendar, MapPin, Trash2, Check, Thermometer, ShieldAlert, Sparkles, Edit2 } from 'lucide-react';
+import { formatQuantityValue, formatUnit } from '../utils/format';
+import { detectCategory } from '../utils/categoryDetector';
 
 export default function Fridge({ currentUser, refreshTrigger, triggerRefresh }) {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('Tất cả'); // Tất cả, Ngăn đông, Ngăn mát, Tủ khô
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [newItem, setNewItem] = useState({
     name: '',
     category: 'Rau củ',
     quantity: '',
-    unit: 'g',
+    unit: 'gram',
     expiryDate: '',
     storageLocation: 'Ngăn mát'
   });
 
   const categories = ['Rau củ', 'Thịt cá', 'Đồ khô', 'Gia vị', 'Khác'];
   const locations = ['Ngăn đông', 'Ngăn mát', 'Tủ khô'];
-  const units = ['g', 'kg', 'quả', 'miếng', 'hộp', 'chai', 'bó'];
+  const units = ['gram', 'muỗng', 'gói', 'quả', 'miếng', 'hộp', 'chai', 'bó'];
 
   useEffect(() => {
     fetchFridge();
@@ -39,6 +42,24 @@ export default function Fridge({ currentUser, refreshTrigger, triggerRefresh }) 
     setNewItem(prev => {
       const updated = { ...prev, [name]: value };
       
+      if (name === 'name') {
+        const detectedCategory = detectCategory(value);
+        if (detectedCategory) {
+          updated.category = detectedCategory;
+          if (!prev.expiryDate) {
+            let shelfLife = 7;
+            if (detectedCategory === 'Thịt cá') shelfLife = 3;
+            else if (detectedCategory === 'Rau củ') shelfLife = 5;
+            else if (detectedCategory === 'Đồ khô') shelfLife = 30;
+            else if (detectedCategory === 'Gia vị') shelfLife = 90;
+            
+            const d = new Date();
+            d.setDate(d.getDate() + shelfLife);
+            updated.expiryDate = d.toISOString().split('T')[0];
+          }
+        }
+      }
+      
       // Auto-suggest expiry date based on category when adding a new item
       if (name === 'category' && !prev.expiryDate) {
         let shelfLife = 7;
@@ -55,28 +76,36 @@ export default function Fridge({ currentUser, refreshTrigger, triggerRefresh }) 
     });
   };
 
-  const handleAddSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newItem.name || !newItem.quantity) return;
 
     try {
-      // Format expiry date to ISO
       const expiryISO = newItem.expiryDate 
         ? new Date(newItem.expiryDate).toISOString() 
         : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      await api.addFridgeItem({
-        ...newItem,
-        quantity: parseFloat(newItem.quantity),
-        expiryDate: expiryISO
-      });
+      if (editingId) {
+        await api.updateFridgeItem(editingId, {
+          ...newItem,
+          quantity: parseFloat(newItem.quantity),
+          expiryDate: expiryISO
+        });
+      } else {
+        await api.addFridgeItem({
+          ...newItem,
+          quantity: parseFloat(newItem.quantity),
+          expiryDate: expiryISO
+        });
+      }
 
       setShowAddModal(false);
+      setEditingId(null);
       setNewItem({
         name: '',
         category: 'Rau củ',
         quantity: '',
-        unit: 'g',
+        unit: 'gram',
         expiryDate: '',
         storageLocation: 'Ngăn mát'
       });
@@ -84,6 +113,19 @@ export default function Fridge({ currentUser, refreshTrigger, triggerRefresh }) 
     } catch (err) {
       console.error("Error adding fridge item:", err);
     }
+  };
+
+  const handleEditClick = (item) => {
+    setEditingId(item.id);
+    setNewItem({
+      name: item.name,
+      category: item.category,
+      quantity: item.quantity,
+      unit: item.unit,
+      expiryDate: item.expiryDate ? new Date(item.expiryDate).toISOString().split('T')[0] : '',
+      storageLocation: item.storageLocation
+    });
+    setShowAddModal(true);
   };
 
   const handleUpdateQty = async (id, currentQty, unit, change) => {
@@ -127,7 +169,18 @@ export default function Fridge({ currentUser, refreshTrigger, triggerRefresh }) 
           <h1>Tủ lạnh thông minh</h1>
           <p>Theo dõi hạn sử dụng, quản lý vị trí lưu trữ và tối ưu hóa bảo quản thực phẩm.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+        <button className="btn btn-primary" onClick={() => {
+          setEditingId(null);
+          setNewItem({
+            name: '',
+            category: 'Rau củ',
+            quantity: '',
+            unit: 'gram',
+            expiryDate: '',
+            storageLocation: 'Ngăn mát'
+          });
+          setShowAddModal(true);
+        }}>
           <Plus size={18} /> Thêm thực phẩm
         </button>
       </div>
@@ -197,7 +250,12 @@ export default function Fridge({ currentUser, refreshTrigger, triggerRefresh }) 
               >
                 <div>
                   <div className="card-header">
-                    <span className="card-title">{item.name}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="card-title">{item.name}</span>
+                      <button className="btn btn-secondary" style={{ padding: '4px', fontSize: '0.75rem', background: 'transparent', border: 'none', color: 'var(--text-muted)' }} onClick={() => handleEditClick(item)} title="Chỉnh sửa">
+                        <Edit2 size={14} />
+                      </button>
+                    </div>
                     <span className={`badge ${
                       isExpired ? 'badge-danger' : 
                       isExpiring ? 'badge-warning' : 
@@ -212,7 +270,7 @@ export default function Fridge({ currentUser, refreshTrigger, triggerRefresh }) 
                   </div>
 
                   <div style={{ fontSize: '1.25rem', fontWeight: 700, margin: '12px 0 6px 0' }}>
-                    {item.quantity} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)' }}>{item.unit}</span>
+                    {formatQuantityValue(item.quantity, item.unit)} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)' }}>{formatUnit(item.quantity, item.unit)}</span>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: isExpired ? 'var(--danger)' : isExpiring ? 'var(--warning)' : 'var(--text-muted)' }}>
@@ -268,11 +326,11 @@ export default function Fridge({ currentUser, refreshTrigger, triggerRefresh }) 
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h3 className="modal-title">Thêm thực phẩm mới</h3>
+              <h3 className="modal-title">{editingId ? 'Chỉnh sửa thực phẩm' : 'Thêm thực phẩm mới'}</h3>
               <button className="modal-close" onClick={() => setShowAddModal(false)}>✕</button>
             </div>
             
-            <form onSubmit={handleAddSubmit}>
+            <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label className="form-label">Tên thực phẩm *</label>
                 <input 

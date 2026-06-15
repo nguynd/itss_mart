@@ -27,6 +27,9 @@ const Recipe = sequelize.define('Recipe', {
     type: DataTypes.JSONB,
     defaultValue: [],
   },
+  familyId: {
+    type: DataTypes.STRING, // FK → families.id
+  },
 }, {
   tableName: 'recipes',
   timestamps: true,

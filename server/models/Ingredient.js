@@ -20,7 +20,7 @@ const Ingredient = sequelize.define('Ingredient', {
   },
   unit: {
     type: DataTypes.STRING,
-    defaultValue: 'g',
+    defaultValue: 'gram',
   },
   category: {
     type: DataTypes.STRING,

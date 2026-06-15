@@ -38,6 +38,9 @@ const ShoppingItem = sequelize.define('ShoppingItem', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },
+  familyId: {
+    type: DataTypes.STRING, // FK → families.id
+  },
 }, {
   tableName: 'shopping_items',
   timestamps: true,

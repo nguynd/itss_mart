@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import { Search, Clock, Award, CheckCircle2, AlertCircle, ShoppingCart, ChefHat, Sparkles } from 'lucide-react';
+import { formatQuantity } from '../utils/format';
 
 export default function Recipes({ currentUser, refreshTrigger, triggerRefresh }) {
   const [recipes, setRecipes] = useState([]);
@@ -220,10 +221,10 @@ export default function Recipes({ currentUser, refreshTrigger, triggerRefresh })
                           <span>{ing.name}</span>
                         </div>
                         <span style={{ fontWeight: 500, color: isAvailable ? 'var(--text-main)' : 'var(--danger)' }}>
-                          {ing.quantity} {ing.unit}
+                          {formatQuantity(ing.quantity, ing.unit)}
                           {!isAvailable && (
                             <span style={{ fontSize: '0.75rem', display: 'block', textAlign: 'right', fontWeight: 400 }}>
-                              (Thiếu: {missingIng.missing} {ing.unit})
+                              (Thiếu: {formatQuantity(missingIng.missing, ing.unit)})
                             </span>
                           )}
                         </span>

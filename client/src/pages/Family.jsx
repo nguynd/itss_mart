@@ -3,6 +3,7 @@ import { api } from '../api';
 import { UserPlus, Shield, Mail, Trash2, Heart, ShieldAlert, Sparkles, UserCheck } from 'lucide-react';
 
 export default function Family({ currentUser, refreshTrigger, triggerRefresh }) {
+  const [family, setFamily] = useState(null);
   const [users, setUsers] = useState([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [newMember, setNewMember] = useState({
@@ -13,10 +14,7 @@ export default function Family({ currentUser, refreshTrigger, triggerRefresh }) 
 
   const roles = [
     'Thành viên (Member)',
-    'Thành viên (Kho & Tủ lạnh)',
-    'Thành viên (Mua sắm)',
-    'Thành viên (Công thức)',
-    'Thành viên (Kế hoạch & Báo cáo)'
+    'Quản trị viên'
   ];
 
   useEffect(() => {
@@ -25,11 +23,11 @@ export default function Family({ currentUser, refreshTrigger, triggerRefresh }) 
 
   const fetchUsers = async () => {
     try {
-      const data = await api.getUsers();
-      // Filter out admin or display them separate
-      setUsers(data);
+      const data = await api.family.me();
+      setFamily(data);
+      setUsers(data.members || []);
     } catch (err) {
-      console.error("Error fetching family users:", err);
+      console.error("Error fetching family details:", err);
     }
   };
 
@@ -83,13 +81,31 @@ export default function Family({ currentUser, refreshTrigger, triggerRefresh }) 
 
       {/* FAMILY LIST CARD */}
       <div className="glass-card">
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Shield size={20} style={{ color: 'var(--primary)' }} />
-          Thành viên trong nhóm (family-22)
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '1.5rem' }}>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Shield size={20} style={{ color: 'var(--primary)' }} />
+            Thành viên nhóm: {family ? family.name : 'Đang tải...'}
+          </h3>
+          {family && (
+            <div style={{ 
+              fontSize: '0.85rem', 
+              padding: '6px 12px', 
+              background: 'rgba(16, 185, 129, 0.1)', 
+              border: '1px dashed rgba(16, 185, 129, 0.3)', 
+              borderRadius: '8px', 
+              color: 'var(--primary)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px',
+              fontWeight: 600
+            }}>
+              <span>Mã mời: <strong style={{ fontFamily: 'monospace', fontSize: '1rem', letterSpacing: '1px' }}>{family.inviteCode}</strong></span>
+            </div>
+          )}
+        </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-          {users.filter(u => u.familyId === 'family-22').map(u => {
+          {users.map(u => {
             const isCurrentUser = u.id === currentUser.id;
             const isMemberOwner = u.role.includes('Chủ hộ');
 
@@ -144,35 +160,7 @@ export default function Family({ currentUser, refreshTrigger, triggerRefresh }) 
         </div>
       </div>
 
-      {/* RESPONSIBILITY ASSIGNMENT RULES */}
-      <div className="glass-card" style={{ marginTop: '1.5rem' }}>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <UserCheck size={18} style={{ color: 'var(--secondary)' }} />
-          Bảng phân công trách nhiệm gia đình
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', fontSize: '0.85rem' }}>
-          <div style={{ padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border)' }}>
-            <strong style={{ color: 'var(--primary)' }}>Nguyễn Thị Hương (Chủ hộ):</strong>
-            <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Toàn quyền quản trị nhóm, phê duyệt các thực đơn và phân công mua sắm.</p>
-          </div>
-          <div style={{ padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border)' }}>
-            <strong style={{ color: 'var(--primary)' }}>Trần Đức Thắng (Kho hàng):</strong>
-            <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Chịu trách nhiệm quản lý hàng tồn, vị trí tủ lạnh và xử lý đồ quá hạn.</p>
-          </div>
-          <div style={{ padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border)' }}>
-            <strong style={{ color: 'var(--primary)' }}>Lê Hoàng Duy (Mua sắm):</strong>
-            <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Chịu trách nhiệm đi siêu thị/chợ và đánh dấu hoàn thành mua sắm.</p>
-          </div>
-          <div style={{ padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border)' }}>
-            <strong style={{ color: 'var(--primary)' }}>Phạm Hải Nam (Nấu bếp):</strong>
-            <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Sáng tạo công thức, theo dõi khớp nguyên liệu và chế biến các bữa ăn.</p>
-          </div>
-          <div style={{ padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border)' }}>
-            <strong style={{ color: 'var(--primary)' }}>Nguyễn Tấn Dương (Kế hoạch):</strong>
-            <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Lên thực đơn tuần và tối ưu hóa lượng thức ăn thừa/chi tiêu.</p>
-          </div>
-        </div>
-      </div>
+
 
       {/* INVITE MODAL */}
       {showInviteModal && (

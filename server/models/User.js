@@ -21,6 +21,9 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     validate: { isEmail: true },
   },
+  passwordHash: {
+    type: DataTypes.STRING(255),
+  },
   familyId: {
     type: DataTypes.STRING,
   },

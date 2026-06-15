@@ -39,6 +39,9 @@ const FridgeItem = sequelize.define('FridgeItem', {
     type: DataTypes.ENUM('fresh', 'expiring', 'expired', 'consumed', 'wasted'),
     defaultValue: 'fresh',
   },
+  familyId: {
+    type: DataTypes.STRING, // FK → families.id
+  },
 }, {
   tableName: 'fridge_items',
   timestamps: true,

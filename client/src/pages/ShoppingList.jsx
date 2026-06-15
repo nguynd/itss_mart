@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import { Plus, Check, Trash2, ShoppingBag, User, CheckSquare, Square, RefreshCw } from 'lucide-react';
+import { Plus, Check, Trash2, ShoppingBag, User, CheckSquare, Square, RefreshCw, Edit2 } from 'lucide-react';
+import { formatQuantity } from '../utils/format';
+import { detectCategory } from '../utils/categoryDetector';
 
 export default function ShoppingList({ currentUser, refreshTrigger, triggerRefresh }) {
   const [items, setItems] = useState([]);
   const [users, setUsers] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [newItem, setNewItem] = useState({
     name: '',
     category: 'Rau củ',
     quantity: '',
-    unit: 'g',
+    unit: 'gram',
     assignedTo: 'user-duy'
   });
 
   const categories = ['Rau củ', 'Thịt cá', 'Đồ khô', 'Gia vị', 'Khác'];
-  const units = ['g', 'kg', 'quả', 'miếng', 'hộp', 'chai', 'bó'];
+  const units = ['gram', 'muỗng', 'gói', 'quả', 'miếng', 'hộp', 'chai', 'bó'];
 
   useEffect(() => {
     fetchShoppingData();
@@ -52,28 +55,50 @@ export default function ShoppingList({ currentUser, refreshTrigger, triggerRefre
     }
   };
 
-  const handleAddSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newItem.name || !newItem.quantity) return;
 
     try {
-      await api.addShoppingItem({
-        ...newItem,
-        quantity: parseFloat(newItem.quantity),
-        createdBy: currentUser.id
-      });
+      if (editingId) {
+        await api.updateShoppingItem(editingId, {
+          ...newItem,
+          quantity: parseFloat(newItem.quantity),
+          assignedTo: newItem.assignedTo || currentUser.id
+        });
+      } else {
+        await api.addShoppingItem({
+          ...newItem,
+          quantity: parseFloat(newItem.quantity),
+          createdBy: currentUser.id
+        });
+      }
+
       setShowAddModal(false);
+      setEditingId(null);
       setNewItem({
         name: '',
         category: 'Rau củ',
         quantity: '',
-        unit: 'g',
+        unit: 'gram',
         assignedTo: currentUser.id
       });
       triggerRefresh();
     } catch (err) {
       console.error("Error adding item:", err);
     }
+  };
+
+  const handleEditClick = (item) => {
+    setEditingId(item.id);
+    setNewItem({
+      name: item.name,
+      category: item.category,
+      quantity: item.quantity,
+      unit: item.unit,
+      assignedTo: item.assignedTo
+    });
+    setShowAddModal(true);
   };
 
   const handleCompleteShopping = async () => {
@@ -116,7 +141,17 @@ export default function ShoppingList({ currentUser, refreshTrigger, triggerRefre
           <button className="btn btn-secondary" onClick={handleCompleteShopping} style={{ borderColor: 'rgba(59, 130, 246, 0.4)', color: 'var(--secondary)' }}>
             <Check size={18} /> Hoàn tất đi chợ
           </button>
-          <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+          <button className="btn btn-primary" onClick={() => {
+            setEditingId(null);
+            setNewItem({
+              name: '',
+              category: 'Rau củ',
+              quantity: '',
+              unit: 'gram',
+              assignedTo: currentUser.id
+            });
+            setShowAddModal(true);
+          }}>
             <Plus size={18} /> Thêm đồ cần mua
           </button>
         </div>
@@ -161,12 +196,21 @@ export default function ShoppingList({ currentUser, refreshTrigger, triggerRefre
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         <span className="shopping-badge">
-                          {item.quantity} {item.unit}
+                          {formatQuantity(item.quantity, item.unit)}
                         </span>
 
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <User size={12} /> {getUserName(item.assignedTo)}
                         </span>
+
+                        <button 
+                          className="modal-close" 
+                          style={{ padding: '4px' }}
+                          onClick={() => handleEditClick(item)}
+                          title="Chỉnh sửa mặt hàng"
+                        >
+                          <Edit2 size={16} style={{ color: 'var(--text-muted)' }} />
+                        </button>
 
                         <button 
                           className="modal-close" 
@@ -191,11 +235,11 @@ export default function ShoppingList({ currentUser, refreshTrigger, triggerRefre
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h3 className="modal-title">Thêm đồ cần mua mới</h3>
+              <h3 className="modal-title">{editingId ? 'Chỉnh sửa mặt hàng' : 'Thêm đồ cần mua mới'}</h3>
               <button className="modal-close" onClick={() => setShowAddModal(false)}>✕</button>
             </div>
             
-            <form onSubmit={handleAddSubmit}>
+            <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label className="form-label">Tên mặt hàng *</label>
                 <input 
@@ -204,7 +248,17 @@ export default function ShoppingList({ currentUser, refreshTrigger, triggerRefre
                   className="form-input" 
                   placeholder="Ví dụ: Bí đao, Hành lá, Sườn heo..." 
                   value={newItem.name}
-                  onChange={(e) => setNewItem(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setNewItem(prev => {
+                      const updated = { ...prev, name: value };
+                      const detectedCategory = detectCategory(value);
+                      if (detectedCategory) {
+                        updated.category = detectedCategory;
+                      }
+                      return updated;
+                    });
+                  }}
                   required 
                 />
               </div>

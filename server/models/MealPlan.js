@@ -20,7 +20,10 @@ const MealPlan = sequelize.define('MealPlan', {
     allowNull: false,
   },
   recipeName: {
-    type: DataTypes.STRING, // denormalized để tránh JOIN khi chỉ cần hiển thị tên
+    type: DataTypes.STRING,
+  },
+  familyId: {
+    type: DataTypes.STRING, // FK → families.id
   },
 }, {
   tableName: 'meal_plans',
@@ -28,7 +31,7 @@ const MealPlan = sequelize.define('MealPlan', {
   indexes: [
     {
       unique: true,
-      fields: ['dayOfWeek', 'mealType'], // mỗi slot chỉ có 1 món
+      fields: ['dayOfWeek', 'mealType', 'familyId'], // mỗi gia đình có slot riêng
     },
   ],
 });
