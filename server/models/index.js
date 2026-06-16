@@ -6,6 +6,7 @@ const ShoppingItem = require('./ShoppingItem');
 const Recipe      = require('./Recipe');
 const Ingredient  = require('./Ingredient');
 const MealPlan    = require('./MealPlan');
+const Category    = require('./Category');
 
 // ─────────────────────────────────────────────────────────────
 // ASSOCIATIONS
@@ -40,4 +41,4 @@ Ingredient.belongsTo(Recipe, { foreignKey: 'recipeId' });
 Recipe.hasMany(MealPlan,   { as: 'mealPlans', foreignKey: 'recipeId' });
 MealPlan.belongsTo(Recipe, { as: 'recipe',   foreignKey: 'recipeId' });
 
-module.exports = { sequelize, Family, User, FridgeItem, ShoppingItem, Recipe, Ingredient, MealPlan };
+module.exports = { sequelize, Family, User, FridgeItem, ShoppingItem, Recipe, Ingredient, MealPlan, Category };

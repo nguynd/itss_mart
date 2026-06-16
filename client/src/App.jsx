@@ -11,6 +11,7 @@ import MealPlanner from './pages/MealPlanner';
 import Analytics from './pages/Analytics';
 import Family from './pages/Family';
 import AdminPanel from './pages/AdminPanel';
+import AdminDashboard from './pages/AdminDashboard';
 
 import { 
   LayoutDashboard, 
@@ -22,7 +23,8 @@ import {
   Users, 
   Settings, 
   UserCircle,
-  LogOut
+  LogOut,
+  Key
 } from 'lucide-react';
 
 export default function App() {
@@ -31,6 +33,10 @@ export default function App() {
   const [users, setUsers]             = useState([]);
   const [currentTab, setCurrentTab]   = useState('dashboard');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Modal State
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
   // Kiểm tra token khi khởi động
   useEffect(() => {
@@ -94,6 +100,21 @@ export default function App() {
     setAuthState('login');
   };
 
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      return alert('Mật khẩu mới không khớp.');
+    }
+    try {
+      await api.changePassword({ currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword });
+      alert('Đổi mật khẩu thành công!');
+      setShowPasswordModal(false);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      alert('Lỗi: ' + err.message);
+    }
+  };
+
   const triggerRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
   };
@@ -154,27 +175,40 @@ export default function App() {
     );
   }
 
+  // Kiểm tra quyền Admin
+  const isAdmin = currentUser.role.includes('Admin') || currentUser.role.includes('Quản trị viên');
+
   // Define sidebar items
-  const menuItems = [
-    { key: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard, roleRequired: '' },
-    { key: 'fridge', label: 'Tủ lạnh', icon: Apple, roleRequired: '' },
-    { key: 'shopping', label: 'Đi chợ', icon: ShoppingCart, roleRequired: '' },
-    { key: 'recipes', label: 'Công thức', icon: ChefHat, roleRequired: '' },
-    { key: 'mealplan', label: 'Thực đơn tuần', icon: CalendarRange, roleRequired: '' },
-    { key: 'analytics', label: 'Báo cáo', icon: PieChart, roleRequired: '' },
-    { key: 'family', label: 'Gia đình', icon: Users, roleRequired: '' },
-    { key: 'admin', label: 'Quản trị viên', icon: Settings, roleRequired: 'Quản trị viên' }
+  const allMenuItems = [
+    { key: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
+    { key: 'fridge', label: 'Tủ lạnh', icon: Apple },
+    { key: 'shopping', label: 'Đi chợ', icon: ShoppingCart },
+    { key: 'recipes', label: 'Công thức', icon: ChefHat },
+    { key: 'mealplan', label: 'Thực đơn tuần', icon: CalendarRange },
+    { key: 'analytics', label: 'Báo cáo', icon: PieChart },
+    { key: 'family', label: 'Gia đình', icon: Users },
   ];
 
-  // Filter menu based on roles
-  const visibleMenuItems = menuItems.filter(item => {
-    if (!item.roleRequired) return true;
-    return currentUser.role.includes(item.roleRequired);
-  });
+  const adminMenuItems = [
+    { key: 'admin', label: 'Quản trị viên', icon: Settings },
+  ];
+
+  // Admin chỉ thấy menu admin; user thường thấy tất cả + admin nếu có role
+  const visibleMenuItems = isAdmin
+    ? adminMenuItems
+    : [
+        ...allMenuItems,
+        ...(currentUser.role.includes('Quản trị viên') || currentUser.role.includes('Admin')
+          ? [{ key: 'admin', label: 'Quản trị viên', icon: Settings }]
+          : []),
+      ];
+
+  // Admin luôn ở tab admin
+  const effectiveTab = isAdmin ? 'admin' : currentTab;
 
   // Render Page Content
   const renderContent = () => {
-    switch (currentTab) {
+    switch (effectiveTab) {
       case 'dashboard':
         return (
           <Dashboard 
@@ -233,7 +267,8 @@ export default function App() {
         );
       case 'admin':
         return (
-          <AdminPanel 
+          <AdminDashboard
+            currentUser={currentUser}
             refreshTrigger={refreshTrigger}
             triggerRefresh={triggerRefresh}
           />
@@ -258,7 +293,7 @@ export default function App() {
         <nav className="nav-menu">
           {visibleMenuItems.map(item => {
             const Icon = item.icon;
-            const isActive = currentTab === item.key;
+            const isActive = effectiveTab === item.key;
             return (
               <a 
                 key={item.key} 
@@ -289,6 +324,20 @@ export default function App() {
             </div>
           </div>
           <button
+            onClick={() => setShowPasswordModal(true)}
+            title="Đổi mật khẩu"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text-muted)', padding: '6px', borderRadius: '8px',
+              display: 'flex', alignItems: 'center', transition: 'color 0.2s, background 0.2s',
+              flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.background = 'rgba(16,185,129,0.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'none'; }}
+          >
+            <Key size={18} />
+          </button>
+          <button
             id="logout-btn"
             onClick={handleLogout}
             title="Đăng xuất"
@@ -312,6 +361,56 @@ export default function App() {
         {/* PAGE CONTENT */}
         {renderContent()}
       </main>
+
+      {/* ĐỔI MẬT KHẨU MODAL */}
+      {showPasswordModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Đổi mật khẩu</h3>
+              <button className="modal-close" onClick={() => setShowPasswordModal(false)}>✕</button>
+            </div>
+            <form onSubmit={handlePasswordSubmit}>
+              <div className="form-group">
+                <label className="form-label">Mật khẩu hiện tại</label>
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  value={passwordForm.currentPassword}
+                  onChange={e => setPasswordForm(p => ({ ...p, currentPassword: e.target.value }))}
+                  required 
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Mật khẩu mới</label>
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  value={passwordForm.newPassword}
+                  onChange={e => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
+                  required 
+                  minLength={6}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Xác nhận mật khẩu mới</label>
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  value={passwordForm.confirmPassword}
+                  onChange={e => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                  required 
+                  minLength={6}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 10, marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowPasswordModal(false)}>Hủy</button>
+                <button type="submit" className="btn btn-primary">Xác nhận</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

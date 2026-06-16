@@ -45,12 +45,37 @@ export const api = {
       fetchJSON(`${API_BASE}/family/leave`, { method: 'DELETE' }),
   },
 
-  // ─── USERS ───────────────────────────────────────────────────
+  // ─── USERS (trong gia đình) ──────────────────────────────────────────────────
   getUsers: () => fetchJSON(`${API_BASE}/users`),
   addUser: (userData) =>
     fetchJSON(`${API_BASE}/users`, { method: 'POST', body: JSON.stringify(userData) }),
+  updateUser: (id, data) =>
+    fetchJSON(`${API_BASE}/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (id) =>
     fetchJSON(`${API_BASE}/users/${id}`, { method: 'DELETE' }),
+  changePassword: (data) =>
+    fetchJSON(`${API_BASE}/users/change-password`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  // ─── ADMIN — Quản lý toàn hệ thống ─────────────────────────────────────────
+  admin: {
+    getAllUsers: () => fetchJSON(`${API_BASE}/admin/users`),
+    updateUser: (id, data) =>
+      fetchJSON(`${API_BASE}/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteUser: (id) =>
+      fetchJSON(`${API_BASE}/admin/users/${id}`, { method: 'DELETE' }),
+
+    // Categories
+    getCategories: () => fetchJSON(`${API_BASE}/admin/categories`),
+    addCategory: (data) =>
+      fetchJSON(`${API_BASE}/admin/categories`, { method: 'POST', body: JSON.stringify(data) }),
+    updateCategory: (id, data) =>
+      fetchJSON(`${API_BASE}/admin/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteCategory: (id) =>
+      fetchJSON(`${API_BASE}/admin/categories/${id}`, { method: 'DELETE' }),
+  },
+
+  // ─── CATEGORIES (public — dùng trong form user) ─────────────────────────────
+  getCategories: () => fetchJSON(`${API_BASE}/categories`),
 
   // ─── FRIDGE ──────────────────────────────────────────────────
   getFridge: () => fetchJSON(`${API_BASE}/fridge`),

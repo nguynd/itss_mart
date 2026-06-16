@@ -53,7 +53,7 @@ const familyMiddleware = (req, res, next) => {
 
 const {
   sequelize,
-  Family, User, FridgeItem, ShoppingItem, Recipe, Ingredient, MealPlan,
+  Family, User, FridgeItem, ShoppingItem, Recipe, Ingredient, MealPlan, Category,
 } = require('./models');
 
 const app = express();
@@ -333,6 +333,88 @@ app.get('/api/users', authMiddleware, familyMiddleware, async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────
+// 1b. ADMIN — Quản lý toàn bộ user trong hệ thống
+// ─────────────────────────────────────────────────────────────────
+
+// Middleware chỉ cho phép Admin (kiểm tra cả tiếng Anh lẫn tiếng Việt)
+const adminMiddleware = (req, res, next) => {
+  const role = req.user.role || '';
+  const isAdmin = role.includes('Admin') || role.includes('Quản trị viên') || role.includes('admin');
+  if (!isAdmin) {
+    return res.status(403).json({ error: 'Bạn không có quyền truy cập tính năng này.' });
+  }
+  next();
+};
+
+// Middleware kiểm tra Admin từ DB (bỏ qua role cũ trong JWT)
+const adminMiddlewareDB = async (req, res, next) => {
+  try {
+    const userFromDB = await User.findByPk(req.user.id, { attributes: ['role'] });
+    if (!userFromDB) return res.status(401).json({ error: 'Không tìm thấy user.' });
+    const role = userFromDB.role || '';
+    const isAdmin = role.includes('Admin') || role.includes('Quản trị viên') || role.includes('admin');
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Bạn không có quyền truy cập tính năng này.' });
+    }
+    next();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET /api/admin/users — Toàn bộ user kèm tên gia đình
+app.get('/api/admin/users', authMiddleware, adminMiddlewareDB, async (req, res) => {
+  try {
+    const users = await User.findAll({
+      attributes: ['id', 'name', 'email', 'role', 'avatar', 'familyId', 'createdAt'],
+      order: [['createdAt', 'DESC']],
+    });
+    // Lấy danh sách các familyId duy nhất
+    const familyIds = [...new Set(users.map(u => u.familyId).filter(Boolean))];
+    const families = await Family.findAll({ where: { id: familyIds }, attributes: ['id', 'name', 'inviteCode'] });
+    const familyMap = {};
+    families.forEach(f => { familyMap[f.id] = f; });
+
+    const result = users.map(u => ({
+      ...u.toJSON(),
+      family: u.familyId ? familyMap[u.familyId] : null,
+    }));
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/admin/users/:id — Cập nhật tên/role bất kỳ user nào
+app.put('/api/admin/users/:id', authMiddleware, adminMiddlewareDB, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng.' });
+    const { name, role } = req.body;
+    await user.update({ name, role });
+    const { passwordHash: _, ...safeUser } = user.toJSON();
+    res.json(safeUser);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/admin/users/:id — Xóa bất kỳ user nào (trừ chính mình)
+app.delete('/api/admin/users/:id', authMiddleware, adminMiddlewareDB, async (req, res) => {
+  try {
+    if (req.params.id === req.user.id)
+      return res.status(400).json({ error: 'Không thể tự xóa tài khoản của chính mình.' });
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng.' });
+    await user.destroy();
+    res.json({ message: 'Đã xóa tài khoản.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 app.post('/api/users', authMiddleware, familyMiddleware, async (req, res) => {
   try {
     const user = await User.create({
@@ -344,6 +426,48 @@ app.post('/api/users', authMiddleware, familyMiddleware, async (req, res) => {
       familyId: req.user.familyId,
     });
     res.status(201).json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/users/change-password', authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Vui lòng cung cấp mật khẩu hiện tại và mật khẩu mới.' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Mật khẩu mới phải có ít nhất 6 ký tự.' });
+    }
+
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'Không tìm thấy người dùng.' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Mật khẩu hiện tại không đúng.' });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await user.update({ passwordHash });
+
+    res.json({ message: 'Đổi mật khẩu thành công.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/users/:id', authMiddleware, familyMiddleware, async (req, res) => {
+  try {
+    const user = await User.findOne({ where: { id: req.params.id, familyId: req.user.familyId } });
+    if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng.' });
+    const { name, role } = req.body;
+    await user.update({ name, role });
+    const { passwordHash: _, ...safeUser } = user.toJSON();
+    res.json(safeUser);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -437,6 +561,7 @@ app.post('/api/shopping', authMiddleware, familyMiddleware, async (req, res) => 
       category: req.body.category || 'Khác',
       quantity: parseFloat(req.body.quantity) || 1,
       unit: req.body.unit || 'cái',
+      price: parseFloat(req.body.price) || 0,
       completed: false,
       assignedTo: req.body.assignedTo || (defaultAssignee ? defaultAssignee.id : req.user.id),
       createdBy: req.user.id,
@@ -524,9 +649,23 @@ app.post('/api/shopping/complete', authMiddleware, familyMiddleware, async (req,
 // ─────────────────────────────────────────────────────────────────
 // 4. RECIPES
 // ─────────────────────────────────────────────────────────────────
-app.get('/api/recipes', authMiddleware, familyMiddleware, async (req, res) => {
+// GET /api/recipes — Lấy công thức (admin không cần familyId)
+app.get('/api/recipes', authMiddleware, async (req, res) => {
   try {
-    res.json(await Recipe.findAll({ where: { familyId: { [Op.in]: [req.user.familyId, 'admin'] } }, include: WITH_INGREDIENTS }));
+    const fid = req.user.familyId;
+    const userFromDB = await User.findByPk(req.user.id, { attributes: ['role'] });
+    const role = userFromDB ? userFromDB.role || '' : '';
+    const isAdmin = role.includes('Admin') || role.includes('Quản trị viên');
+    
+    let where;
+    if (isAdmin) {
+      // Admin: lấy tất cả công thức trong hệ thống
+      where = {};
+    } else {
+      if (!fid) return res.status(403).json({ error: 'Bạn chưa thuộc gia đình nào.' });
+      where = { familyId: { [Op.in]: [fid, 'admin'] } };
+    }
+    res.json(await Recipe.findAll({ where, include: WITH_INGREDIENTS }));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -791,9 +930,14 @@ app.get('/api/analytics', authMiddleware, familyMiddleware, async (req, res) => 
     const priceMap = { 'Thịt cá': 120000, 'Rau củ': 25000, 'Đồ khô': 40000, 'Gia vị': 15000, 'Khác': 30000 };
     const spendByCategory = { 'Thịt cá': 0, 'Rau củ': 0, 'Đồ khô': 0, 'Gia vị': 0, 'Khác': 0 };
     shopping.forEach(item => {
-      const rate = priceMap[item.category] || 20000;
-      const cost = Math.round(item.quantity * (item.unit === 'g' ? rate / 1000 : rate));
-      spendByCategory[item.category] = (spendByCategory[item.category] || 0) + cost;
+      if (item.completed) {
+        let cost = item.price;
+        if (!cost) {
+          const rate = priceMap[item.category] || 20000;
+          cost = Math.round(item.quantity * (item.unit === 'gram' || item.unit === 'g' ? rate / 1000 : rate));
+        }
+        spendByCategory[item.category] = (spendByCategory[item.category] || 0) + cost;
+      }
     });
 
     res.json({
@@ -813,8 +957,118 @@ app.get('/api/analytics', authMiddleware, familyMiddleware, async (req, res) => 
 });
 
 // ─────────────────────────────────────────────────────────────────
-// KHỞI ĐỘNG SERVER
+// CATEGORY ENDPOINTS
 // ─────────────────────────────────────────────────────────────────
+
+// GET /api/categories — Lấy danh sách danh mục (tất cả user)
+app.get('/api/categories', authMiddleware, async (req, res) => {
+  try {
+    const cats = await Category.findAll({ order: [['parentId', 'ASC NULLS FIRST'], ['name', 'ASC']] });
+    res.json(cats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/categories — Admin: lấy danh mục
+app.get('/api/admin/categories', authMiddleware, adminMiddlewareDB, async (req, res) => {
+  try {
+    const cats = await Category.findAll({ order: [['parentId', 'ASC NULLS FIRST'], ['name', 'ASC']] });
+    res.json(cats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/categories — Admin: tạo danh mục mới
+app.post('/api/admin/categories', authMiddleware, adminMiddlewareDB, async (req, res) => {
+  try {
+    const { name, parentId, defaultUnit } = req.body;
+    if (!name) return res.status(400).json({ error: 'Tên danh mục là bắt buộc.' });
+    const cat = await Category.create({
+      id: `cat-${Date.now()}`,
+      name: name.trim(),
+      parentId: parentId || null,
+      defaultUnit: defaultUnit || 'gram',
+      familyId: null, // system-wide
+    });
+    res.status(201).json(cat);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/admin/categories/:id — Admin: cập nhật danh mục
+app.put('/api/admin/categories/:id', authMiddleware, adminMiddlewareDB, async (req, res) => {
+  try {
+    const cat = await Category.findByPk(req.params.id);
+    if (!cat) return res.status(404).json({ error: 'Không tìm thấy danh mục.' });
+    const { name, parentId, defaultUnit } = req.body;
+    await cat.update({ name, parentId: parentId || null, defaultUnit });
+    res.json(cat);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/admin/categories/:id — Admin: xóa danh mục (cảnh báo nếu đang dùng)
+app.delete('/api/admin/categories/:id', authMiddleware, adminMiddlewareDB, async (req, res) => {
+  try {
+    const cat = await Category.findByPk(req.params.id);
+    if (!cat) return res.status(404).json({ error: 'Không tìm thấy danh mục.' });
+
+    // Kiểm tra danh mục có đang được sử dụng không
+    const [fridgeCount, shopCount, subCount] = await Promise.all([
+      FridgeItem.count({ where: { category: cat.name } }),
+      ShoppingItem.count({ where: { category: cat.name } }),
+      Category.count({ where: { parentId: cat.id } }),
+    ]);
+
+    const total = fridgeCount + shopCount;
+    if (total > 0 || subCount > 0) {
+      return res.status(409).json({
+        error: `Không thể xóa! Danh mục “${cat.name}” đang được sử dụng bởi ${total} mục thực phẩm và có ${subCount} danh mục phụ.`,
+        details: { fridgeCount, shopCount, subCount }
+      });
+    }
+
+    await cat.destroy();
+    res.json({ message: 'Đã xóa danh mục.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const DEFAULT_CATEGORIES = [
+  { id: 'cat-raucu',   name: 'Rau củ',   parentId: null, defaultUnit: 'gram' },
+  { id: 'cat-thitca',  name: 'Thịt cá',  parentId: null, defaultUnit: 'gram' },
+  { id: 'cat-dokho',   name: 'Đồ khô',   parentId: null, defaultUnit: 'gram' },
+  { id: 'cat-giavi',   name: 'Gia vị',   parentId: null, defaultUnit: 'muỗng' },
+  { id: 'cat-khac',    name: 'Khác',     parentId: null, defaultUnit: 'cái' },
+  // Danh mục phụ - Rau củ
+  { id: 'cat-rau',   name: 'Rau lá',    parentId: 'cat-raucu', defaultUnit: 'gram' },
+  { id: 'cat-cu',    name: 'Củ quả',    parentId: 'cat-raucu', defaultUnit: 'gram' },
+  { id: 'cat-nam',   name: 'Nấm',       parentId: 'cat-raucu', defaultUnit: 'gram' },
+  // Danh mục phụ - Thịt cá
+  { id: 'cat-thit',  name: 'Thịt',      parentId: 'cat-thitca', defaultUnit: 'gram' },
+  { id: 'cat-ca',    name: 'Cá - Hải sản', parentId: 'cat-thitca', defaultUnit: 'gram' },
+  { id: 'cat-trung', name: 'Trứng',     parentId: 'cat-thitca', defaultUnit: 'quả' },
+  // Danh mục phụ - Gia vị
+  { id: 'cat-nuoc',  name: 'Nước chấm', parentId: 'cat-giavi', defaultUnit: 'chai' },
+  { id: 'cat-bot',   name: 'Bột - Muối', parentId: 'cat-giavi', defaultUnit: 'gram' },
+  { id: 'cat-dau',   name: 'Dầu ăn',   parentId: 'cat-giavi', defaultUnit: 'chai' },
+];
+
+const seedCategories = async () => {
+  for (const cat of DEFAULT_CATEGORIES) {
+    const exists = await Category.findByPk(cat.id);
+    if (!exists) {
+      await Category.create({ ...cat, familyId: null });
+    }
+  }
+  console.log('🏷️  Danh mục mặc định đã được khởi tạo');
+};
+
 const start = async () => {
   try {
     await sequelize.authenticate();
@@ -831,6 +1085,8 @@ const start = async () => {
     // Đồng bộ toàn bộ schema (tạo các bảng nếu chưa có)
     await sequelize.sync({ alter: true });
     console.log('🗃️  Toàn bộ schema đồng bộ thành công');
+
+    await seedCategories();
 
     app.listen(PORT, () => console.log(`🚀 Server chạy tại http://localhost:${PORT}`));
   } catch (err) {

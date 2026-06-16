@@ -23,6 +23,10 @@ const ShoppingItem = sequelize.define('ShoppingItem', {
     type: DataTypes.STRING,
     defaultValue: 'cái',
   },
+  price: {
+    type: DataTypes.FLOAT,
+    defaultValue: 0,
+  },
   completed: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,

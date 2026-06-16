@@ -9,19 +9,26 @@ export default function ShoppingList({ currentUser, refreshTrigger, triggerRefre
   const [users, setUsers] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [categories, setCategories] = useState(['Rau củ', 'Thịt cá', 'Đồ khô', 'Gia vị', 'Khác']);
   const [newItem, setNewItem] = useState({
     name: '',
     category: 'Rau củ',
     quantity: '',
     unit: 'gram',
+    price: '',
     assignedTo: 'user-duy'
   });
 
-  const categories = ['Rau củ', 'Thịt cá', 'Đồ khô', 'Gia vị', 'Khác'];
   const units = ['gram', 'muỗng', 'gói', 'quả', 'miếng', 'hộp', 'chai', 'bó'];
 
   useEffect(() => {
     fetchShoppingData();
+    api.getCategories().then(cats => {
+      if (cats && cats.length > 0) {
+        const mainCatNames = cats.filter(c => !c.parentId).map(c => c.name);
+        setCategories(mainCatNames);
+      }
+    }).catch(() => {});
   }, [refreshTrigger]);
 
   const fetchShoppingData = async () => {
@@ -81,6 +88,7 @@ export default function ShoppingList({ currentUser, refreshTrigger, triggerRefre
         category: 'Rau củ',
         quantity: '',
         unit: 'gram',
+        price: '',
         assignedTo: currentUser.id
       });
       triggerRefresh();
@@ -96,6 +104,7 @@ export default function ShoppingList({ currentUser, refreshTrigger, triggerRefre
       category: item.category,
       quantity: item.quantity,
       unit: item.unit,
+      price: item.price || '',
       assignedTo: item.assignedTo
     });
     setShowAddModal(true);
@@ -198,6 +207,12 @@ export default function ShoppingList({ currentUser, refreshTrigger, triggerRefre
                         <span className="shopping-badge">
                           {formatQuantity(item.quantity, item.unit)}
                         </span>
+                        
+                        {item.price > 0 && (
+                          <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 'bold' }}>
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}
+                          </span>
+                        )}
 
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <User size={12} /> {getUserName(item.assignedTo)}
@@ -317,6 +332,20 @@ export default function ShoppingList({ currentUser, refreshTrigger, triggerRefre
                     {units.map(u => <option key={u} value={u}>{u}</option>)}
                   </select>
                 </div>
+              </div>
+
+              <div className="form-group" style={{ marginTop: '15px' }}>
+                <label className="form-label">Giá ước tính (VNĐ)</label>
+                <input 
+                  type="number" 
+                  name="price"
+                  min="0"
+                  step="1000"
+                  className="form-input" 
+                  placeholder="Ví dụ: 15000" 
+                  value={newItem.price}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, price: e.target.value }))}
+                />
               </div>
 
               <div style={{ display: 'flex', justifySelf: 'end', gap: '10px', marginTop: '1.5rem' }}>

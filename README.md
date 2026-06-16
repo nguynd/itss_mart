@@ -94,3 +94,4 @@ npm run dev
 Lệnh này sử dụng `concurrently` để chạy song song:
 - **Backend API:** Sẽ chạy tại `http://localhost:5000`
 - **Frontend Client:** Sẽ khởi động qua Vite (thường ở `http://localhost:5173`)
+

@@ -10,6 +10,7 @@ export default function Fridge({ currentUser, refreshTrigger, triggerRefresh }) 
   const [activeTab, setActiveTab] = useState('Tất cả'); // Tất cả, Ngăn đông, Ngăn mát, Tủ khô
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [categories, setCategories] = useState(['Rau củ', 'Thịt cá', 'Đồ khô', 'Gia vị', 'Khác']);
   const [newItem, setNewItem] = useState({
     name: '',
     category: 'Rau củ',
@@ -19,12 +20,17 @@ export default function Fridge({ currentUser, refreshTrigger, triggerRefresh }) 
     storageLocation: 'Ngăn mát'
   });
 
-  const categories = ['Rau củ', 'Thịt cá', 'Đồ khô', 'Gia vị', 'Khác'];
   const locations = ['Ngăn đông', 'Ngăn mát', 'Tủ khô'];
   const units = ['gram', 'muỗng', 'gói', 'quả', 'miếng', 'hộp', 'chai', 'bó'];
 
   useEffect(() => {
     fetchFridge();
+    api.getCategories().then(cats => {
+      if (cats && cats.length > 0) {
+        const mainCatNames = cats.filter(c => !c.parentId).map(c => c.name);
+        setCategories(mainCatNames);
+      }
+    }).catch(() => {});
   }, [refreshTrigger]);
 
   const fetchFridge = async () => {

@@ -42,6 +42,8 @@ const clearAndSeedDb = async () => {
     });
     console.log('👤 Đã tạo tài khoản Admin mặc định (admin@itss.22.com / admin)');
 
+
+
     console.log('\n🎉 Khởi tạo cơ sở dữ liệu và seed Admin hoàn tất!');
   } catch (err) {
     console.error('❌ Khởi tạo cơ sở dữ liệu thất bại:', err);
