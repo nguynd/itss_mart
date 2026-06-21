@@ -86,6 +86,10 @@ npm run seed
 cd ..
 ```
 
+Sau khi chạy xong, ta sẽ được cấp tài khoản với vai trò admin:
+tài khoản: admin@itss.22.com
+mật khẩu: admin
+
 ### 6. Khởi chạy dự án
 Tại thư mục gốc của dự án, chạy lệnh:
 ```bash
